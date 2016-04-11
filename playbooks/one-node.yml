@@ -1,0 +1,7 @@
+---
+
+- hosts: node*
+  become: yes
+  become_method: sudo
+  roles:
+    - role: one-node

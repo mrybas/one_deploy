@@ -1,0 +1,42 @@
+---
+
+- name: Custom ssh config
+  copy: src="files/dot_ssh/config" dest="/var/lib/one/.ssh/config" mode=600 owner="{{ one_user }}"
+
+- name: Check key
+  stat: path="~{{deploy_username}}/.ssh/id_dsa.pub"
+  become_user: "{{ deploy_username }}"
+  register: pub_key
+  tags:
+    - ssh_key
+
+- name: Generate ssh key
+  shell: "ssh-keygen -q -t dsa -f ~{{deploy_username}}/.ssh/id_dsa -N ''"
+  when: not pub_key.stat.exists
+  become_user: "{{ deploy_username }}"
+  tags:
+    - ssh_key
+
+- name: Double check key
+  stat: path="~/.ssh/id_dsa.pub"
+  register: pub_key
+
+- name: private ssh key
+  copy:
+    src: "~{{deploy_username}}/.ssh/id_dsa"
+    dest: "/var/lib/one/.ssh/id_dsa"
+    owner: "{{ one_user }}"
+    group: "{{ one_user }}"
+    mode: "600"
+  become_user: "{{ one_user }}"
+- name: public ssh key
+  copy:
+    src: "~{{deploy_username}}/.ssh/id_dsa.pub"
+    dest: "/var/lib/one/.ssh/id_dsa.pub"
+    owner: "{{ one_user }}"
+    group: "{{ one_user }}"
+    mode: "644"
+  become_user: "{{ one_user }}"
+
+- name: Add public dsa key to authorized_keys
+  authorized_key: user={{ one_user }} key="{{ lookup('file', '~{{deploy_username}}/.ssh/id_dsa.pub') }}"

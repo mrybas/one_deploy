@@ -1,0 +1,8 @@
+yum_repos:
+  - name: "opennebula"
+    descr: "OpenNebula repository"
+    baseurl: "http://downloads.opennebula.org/repo/4.14/CentOS/7/x86_64/"
+    enabled: 1
+    gpgcheck: 0
+
+ntp_server: "time.in.ua"

@@ -1,0 +1,11 @@
+---
+
+- name: Install RDO Project release
+  yum: name="{{ rdoproject_release_rpm  }}" state=installed
+
+- name: install OpenvSwitch
+  yum: name=openvswitch state=installed
+
+- name: Start OpenvSwitch
+  service: name=openvswitch state=started enabled=yes
+

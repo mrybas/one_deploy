@@ -1,0 +1,16 @@
+DEVICE=one-br0
+{% if openvswitch == "enabled" %}
+TYPE="OVSBridge"
+HOTPLUG="no"
+{% else %}
+TYPE=Bridge
+{% endif %}
+ONBOOT=yes
+{% if net_type == "dhcp" %}
+BOOTPROTO=dhcp
+{% else %}
+IPADDR={{ hostvars[inventory_hostname]['ansible_' + br_dev]["ipv4"]["address"]  }}
+NETMASK={{ hostvars[inventory_hostname]['ansible_' + br_dev]["ipv4"]["netmask"]  }}
+ONBOOT=yes
+{% endif %}
+NM_CONTROLLED=no

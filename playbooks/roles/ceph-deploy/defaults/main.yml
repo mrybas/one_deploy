@@ -1,0 +1,15 @@
+
+---
+yum_repo_files:
+  - name: "ceph-noarch"
+    descr: "Ceph packages for ceph-deploy"
+    baseurl: "http://download.ceph.com/rpm-infernalis/el7/noarch"
+    enabled: 1
+    gpgcheck: 1
+    type: "rpm-md"
+    gpgkey: "https://download.ceph.com/keys/release.asc"
+    priority: 1
+
+rpm_gpg_key_url: "https://download.ceph.com/keys/release.asc"
+
+mon_bootstrap_node: "{{ groups['frontend'][0] }}"

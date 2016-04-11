@@ -1,0 +1,3 @@
+---
+- include: setup.yml
+  when: num_frontends | int > 1

@@ -1,0 +1,6 @@
+deploy_username: "vagrant"
+one_user: "oneadmin"
+one_user_password: "2jfXCWA1yk2E0cOy"
+db_name: "onedb"
+db_username: "onedb"
+db_password: "AWdIaPdAAkzcbk7v"

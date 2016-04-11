@@ -1,0 +1,8 @@
+---
+
+- hosts: ceph-mons*
+  become: yes
+  become_method: sudo
+  roles:
+    - role: ceph-deploy
+    - role: ceph-osd

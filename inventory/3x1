@@ -1,0 +1,31 @@
+nebula01 ansible_connection=local
+nebula02 ansible_host=192.168.33.12 ansible_user=vagrant
+nebula03 ansible_host=192.168.33.13 ansible_user=vagrant
+nebula04 ansible_host=192.168.33.14 ansible_user=vagrant
+
+
+[frontend]
+nebula01 ansible_connection=local ansible_host=192.168.33.11 keepalived_vrrp_priority=255
+nebula02 keepalived_vrrp_priority=245
+nebula03 keepalived_vrrp_priority=235
+[node]
+nebula04
+[frontend:vars]
+keepalived_vip="192.168.33.250"
+keepalived_heartbeat_iface="eth0"
+keepalived_shared_iface="eth0"
+[node:vars]
+br_dev="eth0"
+
+[ceph-mons]
+nebula01
+nebula02
+nebula03
+
+[ceph-osd]
+nebula01 osd_disk="/dev/sdb"
+nebula02 osd_disk="/dev/sdb"
+nebula03 osd_disk="/dev/sdb"
+
+[ceph-client]
+nebula04

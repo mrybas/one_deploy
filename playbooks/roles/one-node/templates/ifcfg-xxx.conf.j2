@@ -1,0 +1,12 @@
+DEVICE={{ br_dev }}
+BOOTPROTO=none
+NM_CONTROLLED=no
+ONBOOT=yes
+{% if openvswitch == "enabled" %}
+TYPE="OVSPort"
+DEVICETYPE="OVSIntPort"
+OVS_BRIDGE=one-br0
+{% else %}
+TYPE=Ethernet
+BRIDGE=one-br0
+{% endif %}

@@ -1,0 +1,36 @@
+---
+- name: Install keepalived
+  yum: name=keepalived
+
+- name: Create scrips directory
+  file:
+    path: "/etc/keepalived/scripts"
+    state: directory
+    mode: 0755
+
+
+- name: Copy keepalived scripts
+  copy:
+    src: "files/{{ item }}"
+    dest: "/etc/keepalived/scripts/{{ item }}"
+    mode: 755
+  with_items:
+    - "become_master.sh"
+    - "become_slave.sh"
+
+- name: Start services
+  service: name="{{ item }}" state=stopped enabled=no
+  with_items:
+    - opennebula
+    - opennebula-sunstone
+    - opennebula-novnc
+
+- name: Set keepalived conf
+  template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+  notify: Restart keepalived
+
+- name: Start keepalived
+  service: name=keepalived state=started enabled=yes
+

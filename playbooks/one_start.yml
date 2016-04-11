@@ -1,0 +1,15 @@
+---
+- include: common.yml
+- include: ceph.yml
+- include: percona.yml
+- include: one-frontend.yml
+  vars:
+    mysql_root_password: 'Jovoh4aceloduush'
+    num_frontends: "{{ groups['frontend'] | length }}"
+  tags:
+    - oneinstall
+    - frontend
+- include: one-node.yml
+  tags:
+    - oneinstall
+    - node

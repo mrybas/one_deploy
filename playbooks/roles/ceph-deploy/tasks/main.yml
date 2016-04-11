@@ -1,0 +1,15 @@
+---
+
+- name: create .repo files
+  template: src=yumrepos.j2 dest="/etc/yum.repos.d/{{ item.name }}.repo"
+  when: inventory_hostname == mon_bootstrap_node
+  with_items: '{{ yum_repo_files }}'
+
+- name: GPG key Ceph
+  rpm_key: key="{{ rpm_gpg_key_url }}" state=present
+  when: inventory_hostname == mon_bootstrap_node
+  tags:
+    - rpm-gpg-key
+
+- include: ceph-deploy.yml
+  when: inventory_hostname == mon_bootstrap_node

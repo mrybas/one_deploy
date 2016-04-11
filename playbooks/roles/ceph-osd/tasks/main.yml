@@ -1,0 +1,98 @@
+---
+
+- name: MakeLabel GPT
+  command: parted -a optimal "{{ osd_disk }}" mklabel gpt
+
+- name: Create partition
+  command: parted -a optimal -- "{{ osd_disk }}" unit compact mkpart primary ext4 "1" "-1"
+
+- name: Create filesystem on data partition
+  filesystem: fstype=ext4 dev={{ osd_disk }}1
+
+- name: Generate UUID for OSD
+  shell: uuidgen
+  register: osd_uuid
+  tags:
+    - gen_osd_uuid
+
+- name: Create new osd
+  shell: ceph osd create "{{ osd_uuid.stdout }}"
+  register: new_osd_id
+  tags:
+    - gen_osd_uuid
+
+- name: Create dir for new osd
+  file:
+    path: /var/lib/ceph/osd/ceph-{{ new_osd_id.stdout }}
+    state: directory
+    group: ceph
+    owner: ceph
+    mode: 0755
+
+- name: mount new osd
+  mount:
+    name: /var/lib/ceph/osd/ceph-{{ new_osd_id.stdout }}
+    src: "{{ osd_disk }}1"
+    fstype: ext4
+    opts: user_xattr
+    state: mounted
+
+- name: mkfs for new osd
+  command: ceph-osd -i "{{ new_osd_id.stdout }}" --mkfs --mkkey --osd-uuid "{{ osd_uuid.stdout }}"
+
+- name: Create OSD keyrig
+  command: ceph auth add osd."{{ new_osd_id.stdout}}"  osd 'allow *' mon 'allow profile osd' -i /var/lib/ceph/osd/ceph-"{{ new_osd_id.stdout }}"/keyring
+
+- name: Add host as new bucket
+  command: ceph --cluster ceph osd crush add-bucket "{{inventory_hostname }}" host
+
+- name: Move new bucket to default root
+  command: ceph osd crush move "{{ inventory_hostname }}" root=default
+
+- name: Add new osd to crushmap
+  command: ceph osd crush add osd."{{ new_osd_id.stdout }}" 1.0 host="{{ inventory_hostname }}"
+
+- name: chown ceph
+  file:
+    path: /var/lib/ceph/osd/ceph-{{ new_osd_id.stdout }}
+    state: directory
+    group: ceph
+    owner: ceph
+    recurse: yes
+
+- name: Start new osds
+  service: name=ceph-osd@{{ new_osd_id.stdout }}.service state=started enabled=yes
+
+- name: Create Pool for VM
+  command: ceph osd pool create one 128
+  delegate_to: "{{ groups['ceph-mons'][0] }}"
+  tags:
+    - create_pool
+
+- name: set Pool minimal size
+  command: ceph osd pool set one min_size 1
+  delegate_to: "{{ groups['ceph-mons'][0] }}"
+  tags:
+    - create_pool
+
+- name: set Pool for size
+  command: ceph osd pool set one size 2
+  delegate_to: "{{ groups['ceph-mons'][0] }}"
+  tags:
+    - create_pool
+
+
+- name: Create cephfs pools
+  command: ceph osd pool create {{ item }} 128
+  with_items:
+    - cephfs_data
+    - cephfs_metadata
+  delegate_to: "{{ groups['ceph-mons'][0] }}"
+  tags:
+    - create_pool
+
+- name: Create new ceph-fs
+  command: ceph fs new one_fs cephfs_metadata cephfs_data
+  delegate_to: "{{ groups['ceph-mons'][0] }}"
+  tags:
+    - create_pool

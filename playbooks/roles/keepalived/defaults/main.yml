@@ -1,0 +1,10 @@
+---
+keepalived_ip_nonlocal_bind: 1
+keepalived_master_server: "{{ groups['frontend'][0] }}"
+keepalived_notification_email: {}
+keepalived_notification_email_from: "root@localhost"
+keepalived_smtp_server: "localhost"
+keepalived_heartbeat_iface: "eth0"
+keepalived_shared_iface: "eth0"
+keepalived_router_id: 1
+keepalived_auth_pass: "04U3NL7UW177ina1"

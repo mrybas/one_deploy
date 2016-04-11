@@ -1,0 +1,76 @@
+---
+
+- name: Create dir for oneadmin user
+  file:
+    path: /var/lib/one
+    state: directory
+    mode: 0755
+  tags:
+    - install_opennebula
+
+- name: Get ceph admin secret
+  shell: ceph-authtool -p /etc/ceph/ceph.client.admin.keyring
+  register: ceph_admin_secret
+  tags:
+    - install_opennebula
+
+- name: mount cephfs to ~oneadmin
+  command: mount -t ceph "{{hostvars[groups['ceph-mons'][0]]['ansible_host']}}":6789:/ /var/lib/one -o name=admin,secret={{ item }}
+  with_items:
+    - "{{ ceph_admin_secret.stdout }}"
+  tags:
+    - install_opennebula
+
+- name: Create oneadmin user
+  user:
+    name: oneadmin
+    home: /var/lib/one
+    shell: /bin/bash
+  tags:
+    - install_opennebula
+
+- name: chown oneadmin home dir
+  file:
+    path: /var/lib/one
+    state: directory
+    group: oneadmin
+    owner: oneadmin
+    recurse: yes
+  tags:
+    - install_opennebula
+
+- name: install OpenNebula
+  yum: name="{{ item }}" state=present
+  with_items:
+    - opennebula-node-kvm
+    - bridge-utils
+
+- include: openvswitch.yml
+  when: openvswitch == "enabled"
+  tags: install_openvswitch
+
+- name: Configure Network
+  template:
+    src: ifcfg-xxx.conf.j2
+    dest: /etc/sysconfig/network-scripts/ifcfg-{{ br_dev }}
+  register: network_chg
+
+- name: Configure bridge
+  template:
+    src: one-br0.conf.j2
+    dest: /etc/sysconfig/network-scripts/ifcfg-one-br0
+  register: onebr_chg
+
+- name: Restart Network
+  service: name="network" state=restarted
+
+- name: Start services
+  service: name="{{ item }}" state=started enabled=yes
+  with_items:
+    - libvirtd
+    - messagebus
+
+- name: Add public dsa key to authorized_keys
+  authorized_key: user={{ one_user }} key="{{ lookup('file', '~/.ssh/id_dsa.pub') }}"
+  tags:
+    - configure_ssh

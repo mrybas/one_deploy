@@ -1,0 +1,8 @@
+---
+
+one_user: "oneadmin"
+br_dev: "eth0"
+net_type: "static"
+openvswitch: "enabled"
+rdoproject_release_rpm: "https://www.rdoproject.org/repos/rdo-release.rpm"
+

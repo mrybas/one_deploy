@@ -1,0 +1,102 @@
+---
+
+- name: Install ceph-deploy
+  yum: name="{{ item }}" state=present
+  with_items:
+    - ceph-deploy
+
+- name: Create ceph-deploy dir
+  file:
+    path: "~/oned-ceph"
+    state: directory
+    mode: 0755
+  become_user: "{{ deploy_username }}"
+
+- name: Create the cluster
+  command: "ceph-deploy new {{ item }}"
+  args:
+    chdir: "~/oned-ceph"
+  with_items: "{{ groups['ceph-mons'][0] }}"
+  become_user: "{{ deploy_username }}"
+
+- name: Install Ceph on monitors
+  command: "ceph-deploy install {{ item }}"
+  args:
+    chdir: "~/oned-ceph"
+  with_items: "{{ groups['ceph-mons'] }}"
+  become_user: "{{ deploy_username }}"
+
+- name: Add the initial monitor(s) and gather the keys
+  command: "ceph-deploy mon create-initial"
+  args:
+    chdir: "~/oned-ceph"
+  become_user: "{{ deploy_username }}"
+
+- name: distribute ceph conf to all monitors
+  command: "ceph-deploy --overwrite-conf admin {{ item }}"
+  args:
+    chdir: "~/oned-ceph"
+  with_items: "{{ groups['ceph-mons'] }}"
+  become_user: "{{ deploy_username }}"
+
+- name: Install Ceph on osd nodes
+  command: "ceph-deploy install {{ item }}"
+  args:
+    chdir: "~/oned-ceph"
+  when: ("{{item}}" not in groups['ceph-mons'])
+  with_items: "{{ groups['ceph-osd'] }}"
+  become_user: "{{ deploy_username }}"
+  tags:
+    - install_ceph
+
+- name: distribute ceph conf to all osd
+  command: "ceph-deploy --overwrite-conf admin {{ item }}"
+  args:
+    chdir: "~/oned-ceph"
+  when: ("{{item}}" not in groups['ceph-mons'])
+  with_items: "{{ groups['ceph-osd'] }}"
+  become_user: "{{ deploy_username }}"
+  tags:
+    - install_ceph
+
+- name: Install Ceph on Clients
+  command: "ceph-deploy install {{ item }}"
+  args:
+    chdir: "~/oned-ceph"
+  when: ("{{item}}" not in groups['ceph-mons'] and "{{item}}" not in groups['ceph-osd'])
+  with_items: "{{ groups['ceph-client'] }}"
+  become_user: "{{ deploy_username }}"
+  tags:
+    - install_ceph
+
+- name: distribute ceph conf to all clients
+  command: "ceph-deploy --overwrite-conf admin {{ item }}"
+  args:
+    chdir: "~/oned-ceph"
+  when: ("{{item}}" not in groups['ceph-mons'] and "{{item}}" not in groups['ceph-osd'])
+  with_items: "{{ groups['ceph-client'] }}"
+  become_user: "{{ deploy_username }}"
+  tags:
+    - install_ceph
+
+- name: Set permission on ceph.client.admin.keyring
+  file:
+    path: "/etc/ceph/ceph.client.admin.keyring"
+    mode: 0644
+
+- name: Add remaining monitors
+  command: "ceph-deploy mon add {{ item }}"
+  args:
+    chdir: "~/oned-ceph"
+  when: item !=  groups['ceph-mons'][0]
+  with_items: "{{ groups['ceph-mons'] }}"
+  become_user: "{{ deploy_username }}"
+  tags: add_mon
+
+- name: Create MDS
+  command: "ceph-deploy mds create {{ item }}"
+  args:
+    chdir: "~/oned-ceph"
+  with_items: "{{ groups['ceph-mons'] }}"
+  become_user: "{{ deploy_username }}"
+  tags: add_mds

@@ -1,0 +1,39 @@
+---
+
+- name: enable EPEL repo
+  yum: name=epel-release state=present
+
+- name: install  OpenNebula repos
+  template:
+    src: yum_repo.j2
+    dest: /etc/yum.repos.d/{{ item.name }}.repo
+  with_items:
+    - "{{ yum_repos }}"
+
+- name: Install requirements
+  yum: name="{{ item }}" state=present
+  with_items:
+    - libselinux-python
+    - ntp
+    - ntpdate
+
+- name: Check ntp socket
+  shell: ss -aln sport = :123 |grep 123 | wc -l
+  register: ntpd_status
+
+- name: Force sync time
+  command: "ntpdate {{ ntp_server }}"
+  when: ntpd_status.stdout == "0"
+
+- name: Start ntpd
+  service: name=ntpd state=started enabled=yes
+
+- name: Disable SELinux
+  selinux: state=disabled
+
+- name: "Build hosts file"
+  lineinfile: dest=/etc/hosts regexp='.*{{ item }}$' line="{{ hostvars[item].ansible_host }} {{item}}" state=present
+  when: hostvars[item].ansible_host is defined
+  with_items: "{{ groups['all'] }}"
+  tags:
+    - create_hosts

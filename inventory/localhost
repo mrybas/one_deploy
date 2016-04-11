@@ -1,0 +1,13 @@
+nebula01 ansible_connection=local
+nebula02 ansible_host=192.168.33.12 ansible_user=vagrant
+
+
+[frontend]
+nebula01 ansible_connection=local ansible_host=192.168.33.11 keepalived_vrrp_priority=255
+[node]
+nebula02
+[frontend:vars]
+keepalived_vip="192.168.33.250"
+keepalived_heartbeat_iface="eth0"
+[node:vars]
+br_dev="eth0"

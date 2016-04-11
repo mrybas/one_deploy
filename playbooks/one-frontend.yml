@@ -1,0 +1,8 @@
+---
+
+- hosts: frontend*
+  become: yes
+  become_method: sudo
+  roles:
+    - role: one-frontend
+    - role: keepalived

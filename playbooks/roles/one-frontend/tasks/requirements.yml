@@ -1,0 +1,49 @@
+---
+
+- name: install requirements
+  yum: name="{{ item }}" state=present
+  with_items:
+    - redhat-lsb
+    - ruby-devel
+    - make
+    - gcc
+    - sqlite-devel
+    - mysql-devel
+    - openssl-devel
+    - curl-devel
+    - rubygem-rake
+    - libxml2-devel
+    - libxslt-devel
+    - patch
+    - expat-devel
+    - gcc-c++
+
+- name: install gems with specific version
+  gem: name="{{ item.name }}" state=present version="{{ item.vershion }}"
+  with_items:
+    - { name: 'treetop', vershion: '>= 1.6.3'}
+    - { name: 'aws-sdk', vershion: '= 1.33'}
+
+- name: install required Ruby gems
+  action: gem name={{ item }} state=present user_install=no
+  with_items:
+    - amazon-ec2
+    - azure
+    - builder
+    - configparser
+    - curb
+    - json
+    - memcache-client
+    - mysql
+    - net-ldap
+    - ox
+    - parse-cron
+    - rack
+    - sequel
+    - sinatra
+    - softlayer_api
+    - sqlite3
+    - thin
+    - trollop
+    - uuidtools
+    - zendesk_api

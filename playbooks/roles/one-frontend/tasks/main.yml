@@ -1,0 +1,77 @@
+---
+
+- name: Create dir for oneadmin user
+  file:
+    path: /var/lib/one
+    state: directory
+    mode: 0755
+  tags:
+    - install_opennebula
+
+- name: Get ceph admin secret
+  shell: ceph-authtool -p /etc/ceph/ceph.client.admin.keyring
+  register: ceph_admin_secret
+  tags:
+    - install_opennebula
+
+- name: mount cephfs to ~oneadmin
+  command: mount -t ceph "{{hostvars[groups['ceph-mons'][0]]['ansible_host']}}":6789:/ /var/lib/one -o name=admin,secret={{ item }}
+  with_items:
+    - "{{ ceph_admin_secret.stdout }}"
+  tags:
+    - install_opennebula
+
+- name: Create oneadmin user
+  user:
+    name: oneadmin
+    home: /var/lib/one
+    shell: /bin/bash
+  tags:
+    - install_opennebula
+
+- name: chown oneadmin home dir
+  file:
+    path: /var/lib/one
+    state: directory
+    group: oneadmin
+    owner: oneadmin
+    recurse: yes
+  tags:
+    - install_opennebula
+
+- name: install OpenNebula
+  yum: name="{{ item }}" state=present
+  with_items:
+    - opennebula-server
+    - opennebula-sunstone
+  tags:
+    - install_opennebula
+
+- include: requirements.yml
+- include: db.yml
+  when: inventory_hostname ==  "{{ groups['frontend'][0] }}"
+
+- name: copy oned.conf
+  template:
+    src: oned.conf
+    dest: /etc/one/oned.conf
+
+- name: Create oneadmin password for sunstone
+  template:
+    src: one_auth.j2
+    dest: "/var/lib/one/.one/one_auth"
+    group: "{{ one_user }}"
+    owner: "{{ one_user }}"
+    mode: 0644
+
+- name: Allow listen sunstone on all address
+  command: sed -i 's/host:\ 127\.0\.0\.1/host:\ 0\.0\.0\.0/g' /etc/one/sunstone-server.conf
+
+- name: Start services
+  service: name="{{ item }}" state=started enabled=yes
+  with_items:
+    - opennebula
+    - opennebula-sunstone
+- include: configure_ssh.yml
+  tags:
+    - configure_ssh
