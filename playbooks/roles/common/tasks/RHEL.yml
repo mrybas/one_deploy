@@ -3,6 +3,9 @@
 - name: enable EPEL repo
   yum: name=epel-release state=present
 
+- name: Disable Firewalld
+  service: name=firewalld state=stoped enabled=false
+
 - name: install  OpenNebula repos
   template:
     src: yum_repo.j2

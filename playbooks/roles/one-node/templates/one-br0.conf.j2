@@ -11,6 +11,9 @@ BOOTPROTO=dhcp
 {% else %}
 IPADDR={{ hostvars[inventory_hostname]['ansible_' + br_dev]["ipv4"]["address"]  }}
 NETMASK={{ hostvars[inventory_hostname]['ansible_' + br_dev]["ipv4"]["netmask"]  }}
+GATEWAY={{ hostvars[inventory_hostname]['ansible_' + br_dev]["ipv4"]["gateway"]  }}
+DNS1={{dns1}}
+DNS2={{dns2}}
 ONBOOT=yes
 {% endif %}
 NM_CONTROLLED=no
